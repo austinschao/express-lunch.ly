@@ -57,6 +57,17 @@ class Customer {
     return new Customer(customer);
   }
 
+  /** get a customer by Full Name. */
+  static getByFullName(customer, searchedName) {
+    const customer = customer.find(customer => customer.fullName === searchedName);
+    if (customer === undefined) {
+      const err = new Error(`No such customer: ${customer.searchedName}`);
+      err.status = 404;
+      throw err;
+    }
+    return customer;
+  }
+
   /** get a customer's full name */
   fullName() {
     return `${this.firstName} ${this.lastName}`;
