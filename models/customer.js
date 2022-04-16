@@ -14,14 +14,13 @@ class Customer {
     this.lastName = lastName;
     this.phone = phone;
     this.notes = notes;
-    this.fullName = this.fullName();
   }
 
   /** find all customers. */
 
   static async all() {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
@@ -36,14 +35,14 @@ class Customer {
 
   static async get(id) {
     const results = await db.query(
-          `SELECT id,
+      `SELECT id,
                   first_name AS "firstName",
                   last_name  AS "lastName",
                   phone,
                   notes
            FROM customers
            WHERE id = $1`,
-        [id],
+      [id],
     );
 
     const customer = results.rows[0];
@@ -58,20 +57,46 @@ class Customer {
   }
 
   /** get a customer by Full Name. */
-  static getByFullName(customer, searchedName) {
-    const customer = customer.find(customer => customer.fullName === searchedName);
-    if (customer === undefined) {
-      const err = new Error(`No such customer: ${customer.searchedName}`);
+  static getByName(customers, searchedName) {
+    const name = searchedName.split(" ");
+    let searchCustomer, listOfCustomers;
+    // Do a query thru DB for matching name NOT IN THE ROUTES!!!
+    if (name.length === 1) {
+      listOfCustomers = customers.filter(
+        customer => customer.firstName === name[0] ||
+        customer.lastName === name[0]);
+    } else {
+      searchCustomer = customers.filter(customer => customer.fullName() === searchedName);
+    }
+
+    if ((searchCustomer || listOfCustomers) === undefined) {
+      const err = new Error(`No such customer: ${searchedName}`);
       err.status = 404;
       throw err;
     }
-    return customer;
+    return (searchCustomer || listOfCustomers);
   }
 
   /** get a customer's full name */
   fullName() {
     return `${this.firstName} ${this.lastName}`;
   }
+
+
+  /** Get top 10 customers by reservations */
+  static async getTop10() {
+    const results = await db.query(
+      `SELECT customers.id, customers.first_name AS "firstName", customers.last_name AS "lastName", customers.phone,
+        customers.notes FROM customers
+        JOIN reservations ON customers.id = reservations.customer_id
+        GROUP BY customers.id, customers.first_name, customers.last_name, customers.phone, customers.notes
+        ORDER BY COUNT(customer_id) DESC LIMIT 10;`)
+
+    return results.rows.map(
+      c => new Customer(c));
+  }
+
+
 
   /** get all reservations for this customer. */
 
@@ -110,3 +135,4 @@ class Customer {
 }
 
 module.exports = Customer;
+

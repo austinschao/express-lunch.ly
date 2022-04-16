@@ -13,15 +13,32 @@ const router = new express.Router();
 /** Homepage: show list of customers or single customer */
 
 router.get("/", async function (req, res, next) {
-  const customers = await Customer.all();
+  // Clean this up rely on the model
+  let customers = await Customer.all();
   const searchCustomer = req.query.search
   if(searchCustomer){
-    const customer = getByFullName(customers, searchCustomer);
-    const reservations = await customer.getReservations();
-    return res.render("customer_detail.html", { customer, reservations })
+    let listOfCustomers = Customer.getByName(customers, searchCustomer);
+
+    if (listOfCustomers.length === 1) {
+      const customer = listOfCustomers[0];
+      const reservations = await customer.getReservations();
+      return res.render("customer_detail.html", { customer, reservations });
+
+    } else {
+      const customers = listOfCustomers;
+      return res.render("customer_list.html", { customers });
+    }
   }
-    return res.render("customer_list.html", { customers });
+  return res.render("customer_list.html", { customers });
 });
+
+/** Get top 10 customers */
+router.get("/top-ten", async function (req, res) {
+  const customers = await Customer.getTop10();
+  debugger;
+  return res.render("customer_list.html", { customers } );
+});
+
 
 /** Form to add a new customer. */
 
